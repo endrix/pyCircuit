@@ -65,6 +65,7 @@ if(PYC_BUILD_COMPILER_DEV)
     AnchorArtifact.h
     SourceNamespace.h
     SourceRuleWrites.h
+    SourceStructure.h
     SourceUnit.h
     SourceIdentifierUnicodeData.LICENSE.txt)
   list(TRANSFORM _pyc_compiler_headers PREPEND "compiler/lib/Compiler/")

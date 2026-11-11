@@ -6,6 +6,9 @@
 #include "Compiler/FinalCppSourceParts.h"
 #include "Compiler/FinalSourceMap.h"
 #include "Compiler/FinalVerilogSourceParts.h"
+#include "Compiler/SourceStructure.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Parser/Parser.h"
 #include "pycircuit/Dialect/ACIR/ACIRDialect.h"
@@ -55,6 +58,25 @@ int main(int argc, char **argv) {
         "{0}\n", llvm::json::Value(llvm::json::Object{{"path", path}}));
     return 0;
   }
+  if (argc == 3 && llvm::StringRef(argv[1]) == "--describe-structure") {
+    // A source unit body also holds the helper functions and arithmetic
+    // the final design no longer contains.
+    DialectRegistry sourceDialects;
+    sourceDialects.insert<acir::ac::ACIRDialect, mlir::arith::ArithDialect,
+                          mlir::func::FuncDialect>();
+    MLIRContext sourceContext(sourceDialects);
+    sourceContext.loadAllAvailableDialects();
+    auto unit = parseSourceFile<ModuleOp>(argv[2], &sourceContext);
+    if (!unit || failed(mlir::verify(*unit)))
+      return 1;
+    auto structure = acir::compiler::describeSourceStructure(*unit, [&] {
+      return mlir::emitError(UnknownLoc::get(&sourceContext));
+    });
+    if (failed(structure))
+      return 1;
+    llvm::outs() << llvm::formatv("{0:2}\n", *structure);
+    return 0;
+  }
   StringRef target, format = "json", rtlMode = "managed";
   bool optionsValid = argc >= 4 && (argc % 2 == 0);
   for (int i = 2; optionsValid && i + 1 < argc; i += 2) {
@@ -73,7 +95,8 @@ int main(int argc, char **argv) {
       (rtlMode != "managed" && rtlMode != "physical") ||
       (target != "verilog" && rtlMode != "managed")) {
     llvm::errs() << "usage: pycircuit-emit FINAL.ac --target cpp|verilog "
-                    "[--format json|source] [--rtl-mode managed|physical]\n";
+                    "[--format json|source] [--rtl-mode managed|physical]\n"
+                    "       pycircuit-emit --describe-structure UNIT.ac\n";
     return 2;
   }
   bool physical = rtlMode == "physical";
