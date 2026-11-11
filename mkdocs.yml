@@ -105,6 +105,7 @@ nav:
       - Overview: development/index.md
       - Source Authoring: development/agent-frontend-guide.md
       - Source-unit Workflow: development/source-unit-workflow.md
+      - Editor Diagrams: development/editor-diagrams.md
       - Shared Functional and Timing Execution: development/shared-functional-timing-model.md
       - Model Tool Product Plan: development/model-tool-product-plan.md
       - Clocked Complete-state Execution: development/clocked-model-execution.md

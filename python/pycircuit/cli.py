@@ -198,6 +198,21 @@ def _cmd_spec_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ide_plan(args: argparse.Namespace) -> int:
+    from ._ide import plan_command
+
+    return plan_command(
+        file=args.file,
+        workflow=args.workflow,
+        hierarchy=args.hierarchy,
+        hierarchy_budget=args.hierarchy_budget,
+        best_effort=args.best_effort,
+        source_root=args.source_root,
+        package_prefix=args.package_prefix,
+        output=args.output,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="pycircuit", allow_abbrev=False)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -364,6 +379,37 @@ def main(argv: list[str] | None = None) -> int:
             project.add_argument("--warmup", type=int, default=1)
             project.add_argument("--batches", type=int, nargs="+", default=[1, 32, 256])
         project.set_defaults(fn=_cmd_project)
+    ide = sub.add_parser("ide", help="Editor integration commands")
+    ide_commands = ide.add_subparsers(dest="ide_cmd", required=True)
+    plan = ide_commands.add_parser(
+        "plan", help="Print the graph document an editor draws a source file from"
+    )
+    plan.add_argument("file", help="The Python source to draw")
+    plan.add_argument("--format", choices=("graph",), default="graph")
+    plan.add_argument(
+        "--workflow",
+        "--module",
+        dest="workflow",
+        help="Module to draw (default: the file's top)",
+    )
+    plan.add_argument(
+        "--hierarchy",
+        action="store_true",
+        help="Also export every nested instance graph",
+    )
+    plan.add_argument("--hierarchy-budget", type=int, default=500, metavar="N")
+    plan.add_argument(
+        "--best-effort",
+        action="store_true",
+        help="On a compile failure print a partial document carrying the errors",
+    )
+    plan.add_argument("--source-root", help="Capture root (default: the file's folder)")
+    plan.add_argument(
+        "--package-prefix",
+        help="Dotted package prefix (default: inferred from the sources' imports)",
+    )
+    plan.add_argument("-o", dest="output", help="Write the document here")
+    plan.set_defaults(fn=_cmd_ide_plan)
     args = p.parse_args(argv)
     if args.cmd == "link":
         if args.from_anchor is None:
